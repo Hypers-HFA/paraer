@@ -105,7 +105,7 @@ def para_ok_or_400(itemset):
                 value = None  # 与 '' 区别
                 para = paramap.get(name)
                 if required and not para:
-                    result.error(name, _(u'required'))
+                    result.error(name, 'required')
                 if para is not None:
                     if para:
                         try:
