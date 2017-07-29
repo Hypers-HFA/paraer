@@ -3,43 +3,8 @@ from __future__ import print_function, unicode_literals
 import six
 from functools import wraps
 from uuid import uuid1
-from django.utils.translation import ugettext as _
-from django.conf import settings
-
-
-class Valid(object):
-    def __init__(self, method, **kwargs):
-        self.method = method
-        self.status = 400
-        self.msg = None
-        self.kwargs = kwargs
-        self.perm_403 = kwargs.pop('perm_403', 403)
-
-    def __str__(self):
-        return '<Valid: %s>' % self.method
-
-    def __repr__(self):
-        return '<Valid: %s>' % self.method
-
-    def __call__(self, *args, **kwargs):
-        return getattr(self, self.method)(*args, **kwargs)
-
-
-class MethodProxy(object):
-    kwargs = {}
-
-    def __init__(self, valid_class=None):
-        self.valid_class = valid_class
-
-    def __call__(self, *args, **kwargs):
-        self.kwargs = kwargs
-        return self
-
-    def __getattr__(self, key):
-        return self.valid_class(key, **self.kwargs)
-
-
-V = MethodProxy()
+from importlib import import_module
+from .datastrctures import Valid
 
 
 def _doc_generater(itemset, func):
@@ -74,8 +39,8 @@ def _doc_generater(itemset, func):
         description = item.get('description') or item.get(
             'msg') or 'description'
         msg = getattr(item['method'], 'msg',
-                      item.get('msg') or item.get('description') or
-                      'msg')  # method maybe V
+                      item.get('msg') or item.get('description')
+                      or 'msg')  # method maybe V
         if type(description) in {list, tuple}:
             description = list2mk(
                 description, title=['value',
@@ -102,6 +67,10 @@ def _doc_generater(itemset, func):
     return swagger
 
 
+def default_data_method(request):
+    return request.GET or request.data
+
+
 def para_ok_or_400(itemset):
     """
     验证参数值, 参数不对则返回400, 若参数正确则返回验证后的值, 并且根据itemset中的值，来生成func的__doc__
@@ -116,28 +85,24 @@ def para_ok_or_400(itemset):
     """
 
     def decorator(func):
-        # if getattr(func, 'paginate', False):  # 如果方法需要分页 则加上分页参数
-        # itemset.extend(pager)
-        # 不把_doc_generator 放在wrapper里的原因是， _doc_generater只会在项目启动的时候被调用
-
+        from django.conf import settings
         swagger = _doc_generater(itemset, func)
+        data_method = default_data_method
+        if getattr(settings, 'PARAER_DATA_METHOD', ''):
+            data_method = import_module(settings.PARAER_DATA_METHOD,
+                                        default_data_method)  # 获取data的方法
 
         def wrapper(cls, request, *args, **kwargs):
             paramap = dict(kwargs)
-            data = request.GET
-            if request.data:  # {'data': {'asd':'efg'}}   前端传的这种形式,只有data一个key
-                if len(request.data) == 1 and 'data' in request.data:
-                    data = request.data.get('data')
-                else:
-                    data = request.data
+            data = data_method(request)
             paramap.update({x: y for x, y in data.items()})
-            result = cls.result_class()
+            result = cls.result_class()  # 继承与Result类
             for item in itemset:
                 name, v, required, msg, replace = [
                     item[x]
                     for x in ['name', 'method', 'required', 'msg', 'replace']
                 ]
-                value = None  # 参数不存在时， value置为None, 与''区别, 如设置推广组的投放期时, 若传start_date='', 则把adgroup的start_date置空
+                value = None  # 与 '' 区别
                 para = paramap.get(name)
                 if required and not para:
                     result.error(name, _(u'required'))
@@ -148,13 +113,12 @@ def para_ok_or_400(itemset):
                         except Exception:
                             if settings.DEBUG:
                                 from traceback import print_exc
-                                print('----')
                                 print_exc()
-                        if v.status == 403:
-                            return result.perm(name, v.msg or
-                                               msg)(status=v.status)
+                        msg = v.msg or msg
+                        if v.status == 403:  # 权限错误时直接返回错误
+                            return result.perm(name, msg)(status=v.status)
                         if not value:
-                            result.error(name, v.msg or msg)
+                            result.error(name, msg)
                     name = replace or name
                     kwargs.update({
                         name: value or para
@@ -193,7 +157,10 @@ def perm_ok_or_403(itemset):
 
 def _make(index, data, length):
     if index == 0:
-        return ''.join([join(data, length), '\n', join(((x * '-') for x in length), length)])
+        return ''.join([
+            join(data, length), '\n',
+            join(((x * '-') for x in length), length)
+        ])
     return join(data, length)
 
 

@@ -43,7 +43,7 @@ setup(
         'simplejson',
         'django-rest-swagger'
     ],
-    packages=['src'],
+    packages=['paraer'],
     include_package_data=True,
     license='MIT',
     description='a para checker and doc generator',
