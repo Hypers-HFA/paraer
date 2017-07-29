@@ -3,11 +3,12 @@ from __future__ import unicode_literals, print_function
 import re
 import json
 
-from openapi_codec.encode import _get_paths_object, generate_swagger_object as _generate_swagger_object
+from openapi_codec.encode import generate_swagger_object as _generate_swagger_object
 from coreapi.compat import force_bytes
 from rest_framework.schemas import SchemaGenerator as _SchemaGenerator
-from rest_framework.compat import coreapi, urlparse
-from rest_framework.renderers import OpenAPICodec as _OpenAPICodec, OpenAPIRenderer as _OpenAPIRenderer, JSONRenderer
+from rest_framework.compat import coreapi
+from rest_framework.renderers import JSONRenderer
+from rest_framework_swagger.renderers import OpenAPICodec as _OpenAPICodec, OpenAPIRenderer as _OpenAPIRenderer
 from rest_framework import status
 from openapi_codec.encode import _get_links
 from django.db import models
@@ -25,24 +26,15 @@ class SchemaGenerator(_SchemaGenerator):
         return doc
 
     def get_swagger_fields(self, path, method, view):
-        """获取swagger中的fields, 若 field name 在path中，则localtion=path"""
         path_args = set(RE_PATH.findall(path))
-        parameters = self.swagger.get('parameters', {})
-
-        fields = [
+        parameters = self.swagger.get('parameters', [])
+        fields = tuple(
             coreapi.Field(
                 name=x['name'],
                 location=(x['name'] in path_args and 'path') or x['in'],
                 required=x['name'] in path_args or x.get('required', False),
                 description=x['description'],
-                type=x['type']) for x in parameters
-        ]
-        return fields
-
-    def get_serializer_fields(self, path, method, view):
-        fields = super(SchemaGenerator, self).get_serializer_fields(
-            path, method, view)
-        fields.extend(self.get_swagger_fields(path, method, view))
+                type=x['type']) for x in parameters)
         return fields
 
     def get_link(self, path, method, view):
@@ -50,6 +42,13 @@ class SchemaGenerator(_SchemaGenerator):
         Return a `coreapi.Link` instance for the given endpoint.
         """
         link = super(SchemaGenerator, self).get_link(path, method, view)
+        fields = link.fields + self.get_swagger_fields(path, method, view)
+        link = coreapi.Link(
+            url=link.url,
+            action=link.action,
+            encoding=link.encoding,
+            fields=fields,
+            description=link.description)
         link.__serializer__ = getattr(
             view, 'serializer_class',
             None)  # Link是不可变的数据结构。。。所以覆盖带下划线的属性,以绕过这个限制
@@ -86,7 +85,7 @@ def generate_swagger_object(document):
     """
     为了生成definitions对象
     """
-    swagger = generate_swagger_object(document)
+    swagger = _generate_swagger_object(document)
     links = _get_links(document)
     dataset = dict((serializergeter(link.__serializer__))
                    for operation_id, link, tags in links

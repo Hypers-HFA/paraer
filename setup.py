@@ -3,7 +3,7 @@ import os
 import sys
 import shutil
 from setuptools import setup
-from src import __version__ as VERSION
+from paraer import __version__ as VERSION
 
 if sys.argv[-1] == 'publish':
     if os.system("wheel version"):
