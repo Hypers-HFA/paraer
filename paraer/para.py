@@ -94,6 +94,7 @@ def para_ok_or_400(itemset):
 
         def wrapper(cls, request, *args, **kwargs):
             paramap = dict(kwargs)
+            paramap.setdefault('id', kwargs.get('pk', None))  # Serializer fields中生成的为id 这个key， 但是django解析url中为 pk这个pk，为了不在文档中生成id 和pk这两个field， 所以都统一用id这个key， 那么在itemset中也写id这个key
             data = data_method(request)
             paramap.update({x: y for x, y in data.items()})
             result = cls.result_class()  # 继承与Result类

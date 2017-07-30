@@ -42,7 +42,9 @@ class SchemaGenerator(_SchemaGenerator):
         Return a `coreapi.Link` instance for the given endpoint.
         """
         link = super(SchemaGenerator, self).get_link(path, method, view)
-        fields = link.fields + self.get_swagger_fields(path, method, view)
+        swagger_fields = self.get_swagger_fields(path, method, view)
+        nameset = {x.name for x in swagger_fields}
+        fields = tuple((x for x in link.fields if x.name not in nameset)) + swagger_fields
         link = coreapi.Link(
             url=link.url,
             action=link.action,
