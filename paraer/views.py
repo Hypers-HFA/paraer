@@ -12,12 +12,20 @@ def get_swagger_view(title=None, url=None, patterns=None, urlconf=None):
     from rest_framework.response import Response
     from rest_framework.views import APIView
     from rest_framework_swagger import renderers
+    from django.utils.module_loading import import_string
+    from django.conf import settings
     from .doc import OpenAPIRenderer, SchemaGenerator
+    apiview = getattr(settings, 'PARAER_APIVIEW', None)
+    if apiview:
+        apiview = import_string(apiview)
+    else:
+        apiview = APIView
 
-    class SwaggerSchemaView(APIView):
+    class SwaggerSchemaView(apiview):
         _ignore_model_permissions = True
         exclude_from_schema = True
         permission_classes = [AllowAny]
+
         renderer_classes = [
             CoreJSONRenderer, OpenAPIRenderer, renderers.SwaggerUIRenderer
         ]
@@ -43,3 +51,4 @@ def get_swagger_view(title=None, url=None, patterns=None, urlconf=None):
             return Response(schema)
 
     return SwaggerSchemaView.as_view()
+
