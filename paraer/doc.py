@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 import re
 import json
 
+from openapi_codec import encode
 from openapi_codec.encode import generate_swagger_object as _generate_swagger_object
 from coreapi.compat import force_bytes
 from rest_framework.schemas import SchemaGenerator as _SchemaGenerator
@@ -220,3 +221,6 @@ def _get_responses(link):
         response_template.update({'204': {'description': 'Success'}})
 
     return response_template
+
+
+encode._get_responses = _get_responses
