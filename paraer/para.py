@@ -118,7 +118,7 @@ def para_ok_or_400(itemset):
                         msg = v.msg or msg
                         if v.status == 403:  # 权限错误时直接返回错误
                             return result.perm(name, msg)(status=v.status)
-                        if not value:
+                        if value is None or value is False:
                             result.error(name, msg)
                     name = replace or name
                     kwargs.update({
