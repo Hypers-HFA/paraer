@@ -45,6 +45,11 @@ def _doc_generater(itemset, func):
             description = list2mk(
                 description, title=['value',
                                     'description'])  # 支持list转化为markdown表格的形式
+        elif isinstance(description, dict):
+            description = parse_description(
+                description, title={'value':
+                                    'description'})  # 支持dict转化为markdown表格的形式
+
         item['description'] = description
         item.setdefault('msg', msg)
         item.setdefault('replace', None)
@@ -94,7 +99,9 @@ def para_ok_or_400(itemset):
 
         def wrapper(cls, request, *args, **kwargs):
             paramap = dict(kwargs)
-            paramap.setdefault('id', kwargs.get('pk', None))  # Serializer fields中生成的为id 这个key， 但是django解析url中为 pk这个pk，为了不在文档中生成id 和pk这两个field， 所以都统一用id这个key， 那么在itemset中也写id这个key
+            paramap.setdefault(
+                'id', kwargs.get('pk', None)
+            )  # Serializer fields中生成的为id 这个key， 但是django解析url中为 pk这个pk，为了不在文档中生成id 和pk这两个field， 所以都统一用id这个key， 那么在itemset中也写id这个key
             data = data_method(request)
             paramap.update({x: y for x, y in data.items()})
             result = cls.result_class()  # 继承与Result类
@@ -105,7 +112,7 @@ def para_ok_or_400(itemset):
                 ]
                 value = None  # 与 '' 区别
                 para = paramap.get(name)
-                if required and not para:
+                if required and para not in (None, ''):  # 如果是post方法并且传参是json的话，para可能为0
                     result.error(name, 'required')
                 if para is not None:
                     if para:
@@ -118,11 +125,10 @@ def para_ok_or_400(itemset):
                         msg = v.msg or msg
                         if v.status == 403:  # 权限错误时直接返回错误
                             return result.perm(name, msg)(status=v.status)
-                        if value is None or value is False:
+                        if value in (None, False):
                             result.error(name, msg)
-                    name = replace or name
                     kwargs.update({
-                        name: value or para
+                        replace or name: value or para
                     })  # method 返回了非布尔值则更新kwargs
             if not result:
                 return result(status=400)
@@ -167,15 +173,14 @@ def _make(index, data, length):
 
 def join(data, length):  # 填充空格
     try:
-        row = '|'.join([
-            ''.join([x, (length[index] - len(x)) * ' '])
-            for index, x in enumerate(data)
-        ])
+        row = (''.join((x, (length[index] - len(x)) * ' '))
+               for index, x in enumerate(data))
+        row = '|'.join(row)
     except UnicodeDecodeError:
         print('UnicodeDecodeError!!!')
+        print(data)
         return ''
-
-    return ''.join(['|', row, '|'])
+    return ''.join(('|', row, '|'))
 
 
 def list2mk(dataset, title=None):
@@ -193,4 +198,19 @@ def list2mk(dataset, title=None):
         _make(index, data, length) for index, data in enumerate(dataset))
     if txt:
         mk = '\n'.join((txt, '', mk))
+    return mk
+
+
+def parse_description(dataset, title):
+    if isinstance(dataset, list):
+        return ''
+    txt = dataset.pop('', '')
+    length = [max(map(len, x)) for x in [dataset, dataset.values()]]  # 取出最大长度
+
+    blank = join(((x * '-') for x in length), length)
+    title = '\n'.join((join(title.items()[0], length), blank))
+    mk = '\n'.join(join(data, length) for data in dataset.items())
+    mk = '\n'.join((title, mk))
+    if txt:
+        mk = '\n'.join((txt, '\n', mk))
     return mk
