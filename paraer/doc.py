@@ -3,7 +3,6 @@ from __future__ import unicode_literals, print_function
 import re
 import json
 
-from django.conf import settings
 from openapi_codec import encode
 from openapi_codec.encode import generate_swagger_object as _generate_swagger_object
 from coreapi.compat import force_bytes
@@ -14,11 +13,9 @@ from rest_framework_swagger.renderers import OpenAPICodec as _OpenAPICodec, Open
 from rest_framework import status
 from openapi_codec.encode import _get_links
 from django.db import models
-from django.apps import apps
 
 from .fields import _get_properties, _callback
 
-get_model = apps.get_model
 RE_PATH = re.compile('\{(\w+)\}')  # extract  /{arg1}/{arg2}  to [arg1, arg2]
 
 
@@ -120,9 +117,7 @@ def serializergeter(serializer):
         if hasattr(serializer.Meta, 'model'):
             model = serializer.Meta.model
         else:  # set user model
-            model = get_model(settings.AUTH_USER_MODEL)
-            obj = model.objects.last()
-            data = serializer(obj).data
+            data = serializer('any').data
             properties = _get_properties(data, [])
             return obj_name, properties
     fields = model._meta.fields

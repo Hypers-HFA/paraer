@@ -76,6 +76,7 @@ def _callback(field=None, key=None):
 
 
 def _get_properties(data, key=None):
+    result = {}
     if isinstance(data, dict):
         result = dict(type='object')
         properties = {}
