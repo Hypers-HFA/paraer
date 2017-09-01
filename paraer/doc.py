@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 import re
 import json
 
+from django.conf import settings
 from openapi_codec import encode
 from openapi_codec.encode import generate_swagger_object as _generate_swagger_object
 from coreapi.compat import force_bytes
@@ -13,7 +14,11 @@ from rest_framework_swagger.renderers import OpenAPICodec as _OpenAPICodec, Open
 from rest_framework import status
 from openapi_codec.encode import _get_links
 from django.db import models
+from django.apps import apps
 
+from .fields import _get_properties, _callback
+
+get_model = apps.get_model
 RE_PATH = re.compile('\{(\w+)\}')  # extract  /{arg1}/{arg2}  to [arg1, arg2]
 
 
@@ -45,7 +50,8 @@ class SchemaGenerator(_SchemaGenerator):
         link = super(SchemaGenerator, self).get_link(path, method, view)
         swagger_fields = self.get_swagger_fields(path, method, view)
         nameset = {x.name for x in swagger_fields}
-        fields = tuple((x for x in link.fields if x.name not in nameset)) + swagger_fields
+        fields = tuple((x for x in link.fields
+                        if x.name not in nameset)) + swagger_fields
         link = coreapi.Link(
             url=link.url,
             action=link.action,
@@ -98,81 +104,27 @@ def generate_swagger_object(document):
 
     return swagger
 
-
-def _namer(field):
-    field = field.__class__.__name__.lower().split('field')[0]
-    if field.endswith('serializer'):
-        return 'serializer'
-    return field
-
-
-def _callback(field):
-    name = _namer(field)
-    key = field.name
-
-    def auto(field):
-        return dict(format='int64', type='integer')
-
-    def integer(field):
-        return dict(format='int64', type='integer')
-
-    def smallinteger(field):
-        return dict(format='int64', type='integer')
-
-    def boolean(field):
-        return dict(type='string')
-
-    def decimal(field):
-        return dict(format='int64', type='float')
-
-    def char(field):
-        return dict(type='string')
-
-    def url(field):
-        return dict(type='string')
-
-    def text(field):
-        return dict(type='string')
-
-    def datetime(field):
-        return dict(format='date-time', type='string')
-
-    date = datetime
-
-    def choice(field):
-        enum = field.choice_strings_to_values.keys()
-        return dict(type='string', enum=enum)
-
-    def nestedserializer(field):
-        return dict(type='object', description='point to self')
-
-    def email(field):
-        return dict(type='string', format='email')
-
-    def primarykeyrelated(field):
-        return {'$ref': '#/definitions/{}'.format(key)}
-
-    def image(field):
-        return dict(type='file')
-
-    onetoone = serializer = foreignkey = primarykeyrelated
-
-    def serializermethod(field):
-        return dict(type='string')
-
-    data = locals()[name](field)
-    data['description'] = str(field.verbose_name)
-    if field.choices:
-        data['enum'] = [x[0] for x in field.choices]
-    return data
-
+def _get_serializer_name(serializer):
+    if 'Serializer' in serializer.__name__:
+        obj_name = serializer.__name__.split('Serializer')[0]
+    else:
+        obj_name = serializer.__name__
+    return obj_name
 
 def serializergeter(serializer):
-    if not issubclass(serializer, models.Model):
-        model = serializer.Meta.model
-    else:
+    obj_name = _get_serializer_name(serializer)
+
+    if issubclass(serializer, models.Model):
         model = serializer
-    obj_name = model._meta.object_name.lower()
+    else:
+        if hasattr(serializer.Meta, 'model'):
+            model = serializer.Meta.model
+        else:  # set user model
+            model = get_model(settings.AUTH_USER_MODEL)
+            obj = model.objects.last()
+            data = serializer(obj).data
+            properties = _get_properties(data, [])
+            return obj_name, properties
     fields = model._meta.fields
     names = (x.name for x in fields)
     properties = {x: _callback(y) for x, y in zip(names, fields)}
@@ -187,7 +139,7 @@ def _get200(link):
     if hasattr(serializer, '_meta'):
         obj_name = str(serializer._meta.object_name).lower()
     elif hasattr(serializer, 'Meta'):
-        obj_name = str(serializer.Meta.model._meta.object_name).lower()
+        obj_name = _get_serializer_name(serializer)
     ref = {"$ref": "#/definitions/{}".format(obj_name)}
     if link.__action__ == 'list':
         tpl['schema'] = dict(items=ref, type='array')
