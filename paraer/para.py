@@ -112,7 +112,7 @@ def para_ok_or_400(itemset):
                 ]
                 value = None  # 与 '' 区别
                 para = paramap.get(name)
-                if required and para not in (None, ''):  # 如果是post方法并且传参是json的话，para可能为0
+                if required and para in (None, ''):  # 如果是post方法并且传参是json的话，para可能为0
                     result.error(name, 'required')
                 if para is not None:
                     if para:
