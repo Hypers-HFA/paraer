@@ -2,6 +2,15 @@
 from __future__ import unicode_literals, print_function
 
 
+class Field(object):
+    def __init__(self, name, description=None, choices=None, format='string'):
+        self.name = name
+        self.choices = None
+        self.verbose_name = description
+        self.format = format
+        self.__class__.__name__ = name.capitalize() + 'Field'
+
+
 def _namer(field):
     field = field.__class__.__name__.lower().split('field')[0]
     if field.endswith('serializer'):
@@ -87,7 +96,9 @@ def _get_properties(data, key=None):
                 properties[key] = dict(
                     type='array', items=_get_properties(value))
             else:
-                properties[key] = _callback(key=value)
+                if not isinstance(value, Field):
+                    field = Field(value, description=value)
+                properties[key] = _callback(field)
         result['properties'] = properties
     if isinstance(data, list):
         result = []
@@ -97,5 +108,7 @@ def _get_properties(data, key=None):
             elif isinstance(value, dict):
                 result.append(dict(type='array', items=_get_properties(value)))
             else:
-                result.append(_callback(key=value))
+                if not isinstance(value, Field):
+                    field = Field(value, description=value)
+                result.append(_callback(field))
     return result

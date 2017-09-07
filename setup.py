@@ -51,7 +51,7 @@ setup(
     test_suite='tests',
     author='drinksober',
     author_email='drinksober@foxmail.com',
-    url='https://github.com/drinksober/paraer',
+    url='https://github.com/Hypers-HFA/paraer',
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
