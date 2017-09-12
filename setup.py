@@ -41,7 +41,8 @@ setup(
         'openapi-codec>=1.3.1',
         'djangorestframework>=3.5.4',
         'simplejson',
-        'django-rest-swagger'
+        'django-rest-swagger',
+        'six'
     ],
     packages=['paraer'],
     include_package_data=True,
