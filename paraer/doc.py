@@ -47,8 +47,9 @@ class SchemaGenerator(_SchemaGenerator):
         link = super(SchemaGenerator, self).get_link(path, method, view)
         swagger_fields = self.get_swagger_fields(path, method, view)
         nameset = {x.name for x in swagger_fields}
-        fields = tuple((x for x in link.fields
-                        if x.name not in nameset)) + swagger_fields
+        fields = tuple(
+            (x for x in link.fields
+             if (x.name not in nameset and x.name != 'id'))) + swagger_fields
         link = coreapi.Link(
             url=link.url,
             action=link.action,
@@ -101,12 +102,14 @@ def generate_swagger_object(document):
 
     return swagger
 
+
 def _get_serializer_name(serializer):
     if 'Serializer' in serializer.__name__:
         obj_name = serializer.__name__.split('Serializer')[0]
     else:
         obj_name = serializer.__name__
     return obj_name
+
 
 def serializergeter(serializer):
     obj_name = _get_serializer_name(serializer)
