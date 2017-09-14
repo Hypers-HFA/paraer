@@ -51,6 +51,9 @@ def _callback(field=None, key=None):
     def text(field):
         return dict(type='string')
 
+    def file(field):
+        return dict(type='file')
+
     def datetime(field):
         return dict(format='date-time', type='string')
 
