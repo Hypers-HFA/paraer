@@ -33,7 +33,7 @@ def _doc_generater(itemset, func):
         required = item['in'] == 'path'
         item.setdefault('method', lambda x: x)
         item['name'] == 'pk' and item.update(
-            type='integer', required=item.get('required', True))
+            name='id', type='integer', required=item.get('required', True))
         item.setdefault('required', required)
         item.setdefault('type', type_by_name(item['name']))
         description = item.get('description') or item.get(
@@ -112,7 +112,8 @@ def para_ok_or_400(itemset):
                 ]
                 value = None  # 与 '' 区别
                 para = paramap.get(name)
-                if required and para in (None, ''):  # 如果是post方法并且传参是json的话，para可能为0
+                if required and para in (None,
+                                         ''):  # 如果是post方法并且传参是json的话，para可能为0
                     result.error(name, 'required')
                 if para is not None:
                     if para:

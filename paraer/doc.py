@@ -29,7 +29,7 @@ class SchemaGenerator(_SchemaGenerator):
         return doc
 
     def get_swagger_fields(self, path, method, view):
-        path_args = set(RE_PATH.findall(path))
+        path_args = {x for x in RE_PATH.findall(path)}
         parameters = self.swagger.get('parameters', [])
         fields = tuple(
             coreapi.Field(
