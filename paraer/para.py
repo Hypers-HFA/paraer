@@ -203,13 +203,18 @@ def list2mk(dataset, title=None):
 
 
 def parse_description(dataset, title):
+    dataset = {
+        isinstance(x, int) and str(x) or x: y
+        for x, y in dataset.items()
+    }  # 吧数字转为字符串
     if isinstance(dataset, list):
         return ''
     txt = dataset.pop('', '')
     length = [max(map(len, x)) for x in [dataset, dataset.values()]]  # 取出最大长度
 
     blank = join(((x * '-') for x in length), length)
-    title = '\n'.join((join(title.items()[0], length), blank))
+    title = list(title.items())[0]
+    title = '\n'.join((join(title, length), blank))
     mk = '\n'.join(join(data, length) for data in dataset.items())
     mk = '\n'.join((title, mk))
     if txt:

@@ -44,7 +44,10 @@ class SchemaGenerator(_SchemaGenerator):
         """
         Return a `coreapi.Link` instance for the given endpoint.
         """
+        url = self.url
+        self.url = None  # 当设置url时，生成的path中应该不带host
         link = super(SchemaGenerator, self).get_link(path, method, view)
+        self.url = url
         swagger_fields = self.get_swagger_fields(path, method, view)
         nameset = {x.name for x in swagger_fields}
         fields = tuple(
