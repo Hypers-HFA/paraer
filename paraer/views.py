@@ -32,6 +32,9 @@ def get_swagger_view(title=None, url=None, patterns=None, urlconf=None):
 
         def get(self, request, a_url=None):
             url_temp = url
+            if not url_temp:
+                protocol = request.is_secure and 'https://' or 'http://'
+                url_temp = protocol + request.get_host()
             urlconf_temp = urlconf
             if a_url:
                 urlconf_temp = '.'.join([a_url, 'urls'])

@@ -3,7 +3,8 @@ import os
 import sys
 import shutil
 from setuptools import setup
-from paraer import __version__ as VERSION
+with open('paraer/__init__.py', 'r') as fd:
+    VERSION = fd.readline().split('=')[-1].strip().strip("'")
 
 if sys.argv[-1] == 'publish':
     if os.system("wheel version"):

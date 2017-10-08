@@ -209,7 +209,7 @@ def parse_description(dataset, title):
     }  # 吧数字转为字符串
     if isinstance(dataset, list):
         return ''
-    txt = dataset.pop('', '')
+    txt = dataset.pop('description', '')
     length = [max(map(len, x)) for x in [dataset, dataset.values()]]  # 取出最大长度
 
     blank = join(((x * '-') for x in length), length)

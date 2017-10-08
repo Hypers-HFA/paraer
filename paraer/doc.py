@@ -97,10 +97,7 @@ def generate_swagger_object(document):
     """
     swagger = _generate_swagger_object(document)
     links = _get_links(document)
-    dataset = dict((serializergeter(link.__serializer__))
-                   for operation_id, link, tags in links
-                   if (hasattr(link.__serializer__, 'Meta')
-                       or hasattr(link.__serializer__, '_meta')))
+    dataset = dict(serializergeter(link) for _, link, _ in links if getattr(link, '__serializer__', None))
     swagger['definitions'] = dataset
 
     return swagger
@@ -134,8 +131,10 @@ def serializergeter(serializer):
 
 
 def _get200(link):
-    serializer = link.__serializer__
+    serializer = getattr(link, '__serializer__', None)
     tpl = dict(description='Success')
+    if not serializer:
+        return tpl
     obj_name = ''
     if hasattr(serializer, '_meta'):
         obj_name = str(serializer._meta.object_name).lower()
