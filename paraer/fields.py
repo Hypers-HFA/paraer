@@ -72,10 +72,18 @@ def _callback(field=None, key=None):
     def primarykeyrelated(field):
         return {'$ref': '#/definitions/{}'.format(key)}
 
+    serializer = primarykeyrelated
+
+    def onetoone(field):
+        return {
+            '$ref':
+            '#/definitions/{}'.format(field.related_model._meta.object_name)
+        }
+
+    foreignkey = onetoone
+
     def image(field):
         return dict(type='file')
-
-    onetoone = serializer = foreignkey = primarykeyrelated
 
     def serializermethod(field):
         return dict(type='string')

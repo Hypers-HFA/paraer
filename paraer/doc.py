@@ -16,7 +16,10 @@ RE_PATH = re.compile('\{(\w+)\}')  # extract  /{arg1}/{arg2}  to [arg1, arg2]
 
 class SwaggerSchema(Schema):
     def get_swagger_fields(self, path, method):
-        swagger = getattr(method, '__swagger__',
+        view = getattr(self.view, method.lower(), None)  #APIView
+        if not view:
+            view = getattr(self.view, self.view.action, None)  # ViewSet
+        swagger = getattr(view, '__swagger__',
                           {})  # para_ok_or_400中生成的__swagger__
         path_args = {x for x in RE_PATH.findall(path)}
         parameters = swagger.get('parameters', [])
