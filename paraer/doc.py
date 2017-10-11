@@ -36,6 +36,7 @@ class SwaggerSchema(Schema):
         """
         Return a `coreapi.Link` instance for the given endpoint.
         """
+        base_url = None  # 当设置url时，生成的path中应该不带url
         link = super(SwaggerSchema, self).get_link(path, method, base_url)
         swagger_fields = self.get_swagger_fields(path, method)
         nameset = {x.name for x in swagger_fields}
