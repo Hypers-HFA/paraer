@@ -80,13 +80,20 @@ def _callback(field=None, key=None):
             '#/definitions/{}'.format(field.related_model._meta.object_name)
         }
 
-    foreignkey = onetoone
+    manytomanyrel = manytomany = onetoonerel = manytoonerel = foreignkey = onetoone
 
     def image(field):
         return dict(type='file')
 
     def serializermethod(field):
         return dict(type='string')
+
+    if name == 'manytoonerel':
+        field = field.remote_field
+    elif name == 'onetoonerel':
+        field = field.remote_field
+    elif name == 'manytomanyrel':
+        field = field.remote_field
 
     data = locals()[name](field)
     data['description'] = field and str(field.verbose_name) or key

@@ -88,7 +88,7 @@ def serializergeter(serializer):
             data = serializer('any').data
             properties = _get_properties(data, [])
             return obj_name, properties
-    fields = model._meta.fields
+    fields = model._meta.get_fields()
     names = (x.name for x in fields)
     properties = {x: _callback(y) for x, y in zip(names, fields)}
     obj = dict(properties=properties, type='object')
