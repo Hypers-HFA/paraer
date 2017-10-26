@@ -153,7 +153,13 @@ def perm_ok_or_403(itemset):
                 before, method, reason = item.get('before'), item[
                     'method'], item['reason']
                 before and before(request, kwargs)
-                perm = method(request, kwargs)
+                try:
+                    perm = method(request, kwargs)
+                except Exception:
+                    perm = None
+                    if settings.DEBUG:
+                        from  traceback import print_exc
+                        print_exc()
                 if not perm:
                     return cls.result_class().perm(reason=reason)(status=403)
             return func(cls, request, *args, **kwargs)
