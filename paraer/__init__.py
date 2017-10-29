@@ -1,4 +1,4 @@
-__version__ = '0.0.25'
+__version__ = '0.0.28'
 
 from .datastrctures import Result, Valid, MethodProxy
 from .para import para_ok_or_400, perm_ok_or_403

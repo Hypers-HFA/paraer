@@ -126,10 +126,12 @@ def para_ok_or_400(itemset):
                         msg = v.msg or msg
                         if v.status == 403:  # 权限错误时直接返回错误
                             return result.perm(name, msg)(status=v.status)
-                        if value in (None, False):
+                        if value is None or value is False:
                             result.error(name, msg)
+                    if value is True:  # 当v返回的value为True时，取request中的值
+                        value = para
                     kwargs.update({
-                        replace or name: value or para
+                        replace or name: value
                     })  # method 返回了非布尔值则更新kwargs
             if not result:
                 return result(status=400)
