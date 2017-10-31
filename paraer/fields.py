@@ -95,7 +95,7 @@ def _callback(field=None, key=None):
     elif name == 'manytomanyrel':
         field = field.remote_field
 
-    data = locals()[name](field)
+    data = locals().get(name, text)(field)
     data['description'] = field and str(field.verbose_name) or key
     if field and field.choices:
         data['enum'] = [x[0] for x in field.choices]

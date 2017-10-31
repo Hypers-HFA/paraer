@@ -81,13 +81,13 @@ def serializergeter(serializer):
 
     if issubclass(serializer, models.Model):
         model = serializer
-    else:
+    elif hasattr(serializer, 'Meta'):
         if hasattr(serializer.Meta, 'model'):
             model = serializer.Meta.model
-        else:  # set user model
-            data = serializer('any').data
-            properties = _get_properties(data, [])
-            return obj_name, properties
+    else:  # set user model
+        data = serializer().data
+        properties = _get_properties(data, [])
+        return obj_name, properties
     fields = model._meta.get_fields()
     names = (x.name for x in fields)
     properties = {x: _callback(y) for x, y in zip(names, fields)}
