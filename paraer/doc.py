@@ -59,10 +59,12 @@ def wrap_generator(func):
     def inner(document):
         swagger = _generate_swagger_object(document)
         links = _get_links(document)
-        dataset = dict(
-            serializergeter(link.__serializer__) for _, link, _ in links
-            if getattr(link, '__serializer__', None))
-        swagger['definitions'] = dataset
+        result = {}
+        [
+            serializergeter(link[1].__serializer__, result) for link in links
+            if getattr(link[1], '__serializer__', None)
+        ]
+        swagger['definitions'] = result
         return swagger
 
     return inner
@@ -76,9 +78,11 @@ def _get_serializer_name(serializer):
     return obj_name
 
 
-def serializergeter(serializer):
+def serializergeter(serializer, result):
     obj_name = _get_serializer_name(serializer)
-
+    if obj_name in result:
+        return
+    result[obj_name] = None
     if issubclass(serializer, models.Model):
         model = serializer
     elif hasattr(serializer, 'Meta'):
@@ -87,12 +91,17 @@ def serializergeter(serializer):
     else:  # set user model
         data = serializer().data
         properties = _get_properties(data, [])
-        return obj_name, properties
+        result[obj_name] = properties
+        return
     fields = model._meta.get_fields()
+    for x in fields:
+        if getattr(x, 'remote_field', ''):
+            serializergeter(x.related_model, result)
+
     names = (x.name for x in fields)
     properties = {x: _callback(y) for x, y in zip(names, fields)}
     obj = dict(properties=properties, type='object')
-    return obj_name, obj
+    result[obj_name] = obj
 
 
 def _get200(link):

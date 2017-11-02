@@ -18,7 +18,7 @@ def _namer(field):
     return field
 
 
-def _callback(field=None, key=None):
+def _callback(field=None, key=''):
     if field:
         name = _namer(field)
         key = field.name
@@ -80,7 +80,13 @@ def _callback(field=None, key=None):
             '#/definitions/{}'.format(field.related_model._meta.object_name)
         }
 
-    manytomanyrel = manytomany = onetoonerel = manytoonerel = foreignkey = onetoone
+    def manytomanyrel(field):
+        return {
+            '$ref':
+            '#/definitions/{}'.format(field.related_model._meta.object_name)
+        }
+
+    manytomany = onetoonerel = manytoonerel = foreignkey = onetoone
 
     def image(field):
         return dict(type='file')
@@ -92,10 +98,10 @@ def _callback(field=None, key=None):
         field = field.remote_field
     elif name == 'onetoonerel':
         field = field.remote_field
-    elif name == 'manytomanyrel':
-        field = field.remote_field
 
     data = locals().get(name, text)(field)
+    if name == 'manytomanyrel':
+        field = field.remote_field
     data['description'] = field and str(field.verbose_name) or key
     if field and field.choices:
         data['enum'] = [x[0] for x in field.choices]
