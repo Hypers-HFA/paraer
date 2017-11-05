@@ -18,69 +18,63 @@ def _namer(field):
     return field
 
 
-def _callback(field=None, key=''):
-    if field:
-        name = _namer(field)
-        key = field.name
-    else:
-        name = key
-
-    def auto(field):
+class MethodProxy(object):
+    def auto(self, field):
         return dict(format='int64', type='integer')
 
-    def integer(field):
+    def integer(self, field):
         return dict(format='int64', type='integer')
 
-    def smallinteger(field):
+    def smallinteger(self, field):
         return dict(format='int64', type='integer')
 
-    def boolean(field):
+    def boolean(self, field):
         return dict(type='string')
 
-    def decimal(field):
+    def decimal(self, field):
         return dict(format='int64', type='float')
 
-    def char(field):
+    def char(self, field):
         return dict(type='string')
 
     string = char
 
-    def url(field):
+    def url(self, field):
         return dict(type='string')
 
-    def text(field):
+    def text(self, field):
         return dict(type='string')
 
-    def file(field):
+    def file(self, field):
         return dict(type='file')
 
-    def datetime(field):
+    def datetime(self, field):
         return dict(format='date-time', type='string')
 
     date = datetime
 
-    def choice(field):
+    def choice(self, field):
         enum = field.choice_strings_to_values.keys()
         return dict(type='string', enum=enum)
 
-    def nestedserializer(field):
+    def nestedserializer(self, field):
         return dict(type='object', description='point to self')
 
-    def email(field):
+    def email(self, field):
         return dict(type='string', format='email')
 
-    def primarykeyrelated(field):
+    def primarykeyrelated(self, field):
         return {'$ref': '#/definitions/{}'.format(key)}
 
     serializer = primarykeyrelated
 
-    def onetoone(field):
+    def onetoone(self, field):
         return {
             '$ref':
             '#/definitions/{}'.format(field.related_model._meta.object_name)
         }
 
-    def manytomanyrel(field):
+    def manytomanyrel(self, field):
         return {
             '$ref':
             '#/definitions/{}'.format(field.related_model._meta.object_name)
@@ -88,22 +82,35 @@ def _callback(field=None, key=''):
 
     manytomany = onetoonerel = manytoonerel = foreignkey = onetoone
 
-    def image(field):
+    def image(self, field):
         return dict(type='file')
 
-    def serializermethod(field):
+    def serializermethod(self, field):
         return dict(type='string')
 
-    if name == 'manytoonerel':
-        field = field.remote_field
-    elif name == 'onetoonerel':
-        field = field.remote_field
 
-    data = locals().get(name, text)(field)
+proxy = MethodProxy()
+
+
+def _get_description(field):
+    description = getattr(field, 'verbose_name', None)
+    if description is None:
+        description = field.remote_field.verbose_name
+    return str(description)
+
+
+def _callback(field):
+    if field:
+        name = _namer(field)
+    if name == 'onetoonerel':
+        field = field.remote_field
+    data = getattr(proxy, name, proxy.text)(field)
     if name == 'manytomanyrel':
         field = field.remote_field
-    data['description'] = field and str(field.verbose_name) or key
-    if field and field.choices:
+    data['description'] = _get_description(field)
+    if not isinstance(data['description'], str):
+        import ipdb; ipdb.set_trace(context=30)
+    if hasattr(field, 'choices') and field.choices:
         data['enum'] = [x[0] for x in field.choices]
     return data
 
