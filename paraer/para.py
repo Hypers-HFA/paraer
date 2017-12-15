@@ -94,8 +94,7 @@ def para_ok_or_400(itemset):
         swagger = _doc_generater(itemset, func)
         data_method = default_data_method
         if getattr(settings, 'PARAER_DATA_METHOD', ''):
-            data_method = import_module(settings.PARAER_DATA_METHOD,
-                                        default_data_method)  # 获取data的方法
+            data_method = import_module(settings.PARAER_DATA_METHOD)  # 获取data的方法
 
         def wrapper(cls, request, *args, **kwargs):
             paramap = dict(kwargs)
