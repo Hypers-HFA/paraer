@@ -3,7 +3,8 @@ from __future__ import print_function, unicode_literals
 import six
 from functools import wraps
 from uuid import uuid1
-from importlib import import_module
+from django.utils.module_loading import import_string
+
 from .datastrctures import Valid
 
 
@@ -94,7 +95,7 @@ def para_ok_or_400(itemset):
         swagger = _doc_generater(itemset, func)
         data_method = default_data_method
         if getattr(settings, 'PARAER_DATA_METHOD', ''):
-            data_method = import_module(settings.PARAER_DATA_METHOD)  # 获取data的方法
+            data_method = import_string(settings.PARAER_DATA_METHOD)  # 获取data的方法
 
         def wrapper(cls, request, *args, **kwargs):
             paramap = dict(kwargs)
